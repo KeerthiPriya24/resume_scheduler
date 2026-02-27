@@ -128,8 +128,43 @@ const parseAvailability = async (availabilityText) => {
     const apiKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey) {
-        console.log('⚠️ No GEMINI_API_KEY — cannot parse availability with AI');
-        return [{ datetime: new Date().toISOString(), duration: 60 }];
+        console.log('⚠️ No GEMINI_API_KEY found in process.env');
+
+        // Basic fallback parsing for demo/fallback
+        const today = new Date();
+        const slots = [];
+
+        // Very basic regex-based fallback for "Monday", "Tuesday", etc.
+        const dayMap = { 'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4, 'fri': 5, 'sat': 6 };
+        const lower = availabilityText.toLowerCase();
+
+        let foundDay = false;
+        for (const [day, val] of Object.entries(dayMap)) {
+            if (lower.includes(day)) {
+                const d = new Date(today);
+                let diff = val - today.getDay();
+                if (diff <= 0) diff += 7; // Next week
+                d.setDate(today.getDate() + diff);
+                d.setHours(10, 0, 0, 0); // 10 AM
+                slots.push({ datetime: d.toISOString(), duration: 60 });
+
+                const d2 = new Date(d);
+                d2.setHours(14, 0, 0, 0); // 2 PM
+                slots.push({ datetime: d2.toISOString(), duration: 60 });
+                foundDay = true;
+                break;
+            }
+        }
+
+        if (!foundDay) {
+            // Default to tomorrow 10am
+            const d = new Date(today);
+            d.setDate(today.getDate() + 1);
+            d.setHours(10, 0, 0, 0);
+            slots.push({ datetime: d.toISOString(), duration: 60 });
+        }
+
+        return slots;
     }
 
     try {
@@ -163,7 +198,7 @@ Rules:
         return JSON.parse(jsonStr);
     } catch (err) {
         console.error('Gemini availability parse error:', err.message);
-        return [{ datetime: new Date().toISOString(), duration: 60 }];
+        return [{ datetime: new Date(Date.now() + 86400000).toISOString(), duration: 60 }];
     }
 };
 

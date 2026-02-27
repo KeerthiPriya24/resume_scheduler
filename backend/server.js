@@ -51,6 +51,12 @@ app.listen(PORT, () => {
     console.log(`   Server running on http://localhost:${PORT}`);
     console.log(`   API Health: http://localhost:${PORT}/api/health\n`);
 
+    if (process.env.GEMINI_API_KEY) {
+        console.log(`✅ GEMINI_API_KEY detected: ${process.env.GEMINI_API_KEY.substring(0, 4)}...`);
+    } else {
+        console.log(`❌ GEMINI_API_KEY NOT detected in process.env`);
+    }
+
     // Start background jobs
     const { startBackgroundJobs } = require('./services/backgroundJobs');
     startBackgroundJobs();

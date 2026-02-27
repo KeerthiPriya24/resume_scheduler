@@ -1614,11 +1614,279 @@ body::before {
   }
 }
 
-/* ═══ Responsive ═══ */
 @media (max-width: 768px) {
   .navbar-container {
     padding: 0 1rem;
   }
+}
+
+/* ═══ Availability Layout ═══ */
+.availability-layout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .availability-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.calendar-wrap {
+  margin-top: 1rem;
+}
+
+/* React Calendar Styling */
+.react-calendar {
+  width: 100% !important;
+  background: var(--bg-glass) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  font-family: var(--font) !important;
+  padding: 1rem !important;
+  color: var(--text-primary) !important;
+}
+
+.react-calendar__tile {
+  border-radius: 8px !important;
+  transition: var(--transition) !important;
+}
+
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus {
+  background: var(--bg-glass-hover) !important;
+  color: var(--accent) !important;
+}
+
+.react-calendar__tile--now {
+  background: var(--bg-glass-hover) !important;
+  color: var(--accent) !important;
+  font-weight: bold !important;
+}
+
+.react-calendar__tile--active {
+  background: var(--accent) !important;
+  color: white !important;
+}
+
+.has-specific {
+  position: relative;
+}
+
+.has-specific::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+}
+
+.special-day {
+  color: var(--accent) !important;
+  font-weight: bold !important;
+}
+
+.specific-editor h4 {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.time-field label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ═══ Dashboard Layout ═══ */
+.dashboard-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dashboard-aside {
+  position: sticky;
+  top: 2rem;
+}
+
+.has-interview {
+  position: relative;
+}
+
+.has-interview::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.interview-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.interview-mini-card {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-glass);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.interview-mini-card:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.i-time {
+  font-weight: bold;
+  color: var(--accent);
+  min-width: 70px;
+}
+
+.i-body strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.is-available::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--success);
+  border-radius: 50%;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.avail-block-mini {
+  padding: 0.5rem 0.75rem;
+  background: rgba(16, 185, 129, 0.05);
+  border: 1px dashed rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+.custom-tag {
+  font-size: 0.65rem;
+  background: var(--accent);
+  color: white;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.i-body p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Override Cards */
+.mini-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mini-override-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: var(--bg-glass-hover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+}
+
+.mini-override-card:hover {
+  border-color: var(--accent);
+}
+
+.override-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.override-info strong {
+  font-size: 0.9rem;
+}
+
+.override-info span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.btn-icon-sm {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+.btn-icon-sm:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.view-all-link {
+  display: inline-block;
+  margin-top: 1rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
 }
 
 /* ═══ Scheduling Chatbot Grid ═══ */
@@ -1713,7 +1981,6 @@ body::before {
   flex-direction: column;
   gap: 12px;
   text-align: center;
-}
 }
 
 /* ═══ Chatbot UI ═══ */
@@ -1916,6 +2183,16 @@ body::before {
   background: var(--accent-glow);
   border-color: var(--accent);
   transform: translateY(-2px);
+}
+
+.chatbot-calendar-wrap {
+  margin: 1rem 0;
+  max-width: 350px;
+}
+
+.chatbot-calendar-wrap .react-calendar {
+  font-size: 0.8rem !important;
+  padding: 0.5rem !important;
 }
 
 /* Slot Selection Large */

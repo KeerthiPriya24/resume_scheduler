@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
 export default function SchedulingChatbot() {
     const { token } = useParams();
@@ -22,6 +24,13 @@ export default function SchedulingChatbot() {
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
+
+    const [selectedDate, setSelectedDate] = useState(new Date());
+
+    const handleCalendarSelect = (date) => {
+        setSelectedDate(date);
+        handleSend(null, date.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }));
+    };
 
     const loadInterview = async () => {
         try {
@@ -126,9 +135,18 @@ export default function SchedulingChatbot() {
     if (loading) return <div className="loading-screen"><div className="spinner"></div></div>;
     if (error) return <div className="page-container"><div className="alert alert-error">{error}</div></div>;
 
-    const guidedOptions = [
-        "Monday Morning", "Tuesday Afternoon", "Anytime Wednesday", "Thursday @ 10am", "I'm free all week"
-    ];
+    const getUpcomingDates = () => {
+        const dates = [];
+        const today = new Date();
+        for (let i = 1; i <= 5; i++) {
+            const d = new Date(today);
+            d.setDate(today.getDate() + i);
+            dates.push(d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }));
+        }
+        return dates;
+    };
+
+    const guidedOptions = getUpcomingDates();
 
     return (
         <div className="chatbot-page">
@@ -177,8 +195,17 @@ export default function SchedulingChatbot() {
                     )}
 
                     {step === 'availability' && messages.length > 2 && !isTyping && (
-                        <div className="guided-flow">
-                            <p className="guided-label">Quick select availability:</p>
+                        <div className="guided-flow anim-fade-in">
+                            <p className="guided-label">Or pick a specific date:</p>
+                            <div className="chatbot-calendar-wrap">
+                                <Calendar
+                                    onChange={handleCalendarSelect}
+                                    value={selectedDate}
+                                    minDate={new Date()}
+                                />
+                            </div>
+
+                            <p className="guided-label mt-4">Quick select availability:</p>
                             <div className="option-chips">
                                 {guidedOptions.map(opt => (
                                     <button key={opt} className="option-chip" onClick={() => handleSend(null, opt)}>

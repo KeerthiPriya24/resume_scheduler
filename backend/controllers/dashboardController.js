@@ -73,4 +73,62 @@ const closeJob = (req, res) => {
     }
 };
 
-module.exports = { getRecruiterStats, getPipeline, closeJob };
+const getRecruiterInterviews = (req, res) => {
+    try {
+        const interviews = db.prepare(`
+      SELECT i.*, a.status as application_status, u.name as candidate_name, u.email as candidate_email, j.title as job_title
+      FROM interviews i
+      JOIN applications a ON i.application_id = a.id
+      JOIN users u ON a.user_id = u.id
+      JOIN jobs j ON i.job_id = j.id
+      WHERE j.recruiter_id = ? AND i.interview_status = 'confirmed'
+      ORDER BY i.scheduled_at ASC
+    `).all(req.user.id);
+
+        res.json(interviews.map(i => ({
+            ...i,
+            selected_slot: i.selected_slot ? JSON.parse(i.selected_slot) : null
+        })));
+    } catch (err) {
+        console.error('Get recruiter interviews error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+};
+
+const getJobSeekerInterviews = (req, res) => {
+    try {
+        const interviews = db.prepare(`
+      SELECT i.*, j.title as job_title, j.recruiter_id, u.name as recruiter_name
+      FROM interviews i
+      JOIN applications a ON i.application_id = a.id
+      JOIN jobs j ON i.job_id = j.id
+      JOIN users u ON j.recruiter_id = u.id
+      WHERE a.user_id = ? AND i.interview_status = 'confirmed'
+      ORDER BY i.scheduled_at ASC
+    `).all(req.user.id);
+
+        res.json(interviews.map(i => ({
+            ...i,
+            selected_slot: i.selected_slot ? JSON.parse(i.selected_slot) : null
+        })));
+    } catch (err) {
+        console.error('Get jobseeker interviews error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+};
+
+const getRecruiterAvailability = (req, res) => {
+    try {
+        const availability = db.prepare(`
+            SELECT id, day_of_week, start_time, end_time, specific_date 
+            FROM recruiter_availability 
+            WHERE recruiter_id = ? AND is_available = 1
+        `).all(req.user.id);
+        res.json(availability);
+    } catch (err) {
+        console.error('Get availability error:', err);
+        res.status(500).json({ error: 'Server error.' });
+    }
+};
+
+module.exports = { getRecruiterStats, getPipeline, closeJob, getRecruiterInterviews, getJobSeekerInterviews, getRecruiterAvailability };
