@@ -15,9 +15,14 @@ export default function SchedulingChatbot() {
     const [isTyping, setIsTyping] = useState(false);
     const [step, setStep] = useState('greet'); // greet, availability, booking, confirmed
     const [bookedSlot, setBookedSlot] = useState(null);
+    const [bookingInProgress, setBookingInProgress] = useState(false);
+    const [processing, setProcessing] = useState(false);
     const chatEndRef = useRef(null);
+    const hasLoadedRef = useRef(false);
 
     useEffect(() => {
+        if (hasLoadedRef.current) return;
+        hasLoadedRef.current = true;
         loadInterview();
     }, [token]);
 
@@ -92,29 +97,50 @@ export default function SchedulingChatbot() {
         addMessage('user', userText);
 
         if (step === 'availability') {
-            await botResponse('Processing your availability... 🕒');
+            setProcessing(true);
+            await botResponse('Analyzing your availability...');
             try {
                 const res = await axios.post(`/api/interviews/availability/${interview.id}`, {
                     availability: userText
                 });
 
-                // Fetch matching slots
+                // Check if escalated (max negotiation rounds exceeded)
+                if (res.data.escalated) {
+                    await botResponse(res.data.message);
+                    setStep('confirmed');
+                    setProcessing(false);
+                    return;
+                }
+
+                // If no slots could be extracted from user input
+                if (!res.data.slots || res.data.slots.length === 0) {
+                    await botResponse("I wasn't able to identify specific times from that. Could you try something like **\"Tuesday afternoon\"** or **\"next week after 2 PM\"**?");
+                    setProcessing(false);
+                    return;
+                }
+
+                // Fetch matching slots from calendar engine
                 const slotsRes = await axios.get(`/api/interviews/slots/${interview.id}`);
                 setSlots(slotsRes.data);
 
                 if (slotsRes.data.length > 0) {
-                    await botResponse('I found some matching slots! Please select one that works best for you:');
+                    await botResponse('Great, I found available slots that work. Please select one:');
                     setStep('booking');
                 } else {
-                    await botResponse("I couldn't find a direct match with our recruiter's calendar. Let me check with them and get back to you, or feel free to provide other options!");
+                    await botResponse("Unfortunately, those times don't overlap with the interviewer's availability. Could you suggest some alternative times?");
                 }
             } catch (err) {
-                await botResponse('Sorry, I had trouble processing that. Could you try again or be more specific?');
+                await botResponse('Sorry, I had trouble processing that. Could you try again with a specific day and time?');
+            } finally {
+                setProcessing(false);
+
             }
         }
     };
 
     const handleBookSlot = async (slot) => {
+        if (bookingInProgress) return;
+        setBookingInProgress(true);
         try {
             await axios.post(`/api/interviews/book/${interview.id}`, { slot });
             setBookedSlot(slot);
@@ -123,6 +149,7 @@ export default function SchedulingChatbot() {
             setStep('confirmed');
         } catch (err) {
             await botResponse('Sorry, that slot is no longer available. Please try another one.');
+            setBookingInProgress(false);
         }
     };
 
@@ -194,7 +221,7 @@ export default function SchedulingChatbot() {
                         </div>
                     )}
 
-                    {step === 'availability' && messages.length > 2 && !isTyping && (
+                    {step === 'availability' && messages.length > 2 && !isTyping && !processing && (
                         <div className="guided-flow anim-fade-in">
                             <p className="guided-label">Or pick a specific date:</p>
                             <div className="chatbot-calendar-wrap">
@@ -221,7 +248,7 @@ export default function SchedulingChatbot() {
                             <p className="guided-label">Pick a matching slot:</p>
                             <div className="slot-grid">
                                 {slots.map((s, i) => (
-                                    <button key={i} className="slot-btn-large" onClick={() => handleBookSlot(s)}>
+                                    <button key={i} className={`slot-btn-large ${bookingInProgress ? 'slot-btn-disabled' : ''}`} onClick={() => handleBookSlot(s)} disabled={bookingInProgress}>
                                         <span className="slot-date">{formatDate(s.datetime, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
                                         <span className="slot-time">{formatTime(s.datetime, { hour: '2-digit', minute: '2-digit' })}</span>
                                     </button>

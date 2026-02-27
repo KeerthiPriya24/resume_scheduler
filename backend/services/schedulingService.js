@@ -2,6 +2,10 @@ const db = require('../database/init');
 const { v4: uuidv4 } = require('uuid');
 const { sendEmail, templates } = require('./emailService');
 
+// ═══════════════════════════════════════════════════════════════════
+// 1. SHORTLISTING & INVITATION (Step 1)
+// ═══════════════════════════════════════════════════════════════════
+
 const createInterview = (applicationId, jobId) => {
   const token = uuidv4();
 
@@ -42,16 +46,54 @@ const sendSchedulingEmails = async (jobId) => {
   return { sent: shortlisted.length };
 };
 
+
+// ═══════════════════════════════════════════════════════════════════
+// 2–3. AVAILABILITY SUBMISSION + VALIDATION (Steps 2–3)
+// ═══════════════════════════════════════════════════════════════════
+
 const { parseAvailability } = require('./aiService');
 
 const submitAvailability = async (interviewId, availability) => {
   const interview = db.prepare('SELECT * FROM interviews WHERE id = ?').get(interviewId);
   if (!interview) throw new Error('Interview not found');
 
+  // Check if already confirmed — don't allow re-submission
+  if (interview.interview_status === 'confirmed') {
+    throw new Error('Interview is already confirmed.');
+  }
+
+  // Step 6: Check negotiation round limit before processing
+  if (interview.negotiation_rounds >= interview.max_negotiation_rounds) {
+    // Escalate to recruiter
+    db.prepare(`
+      UPDATE interviews SET interview_status = 'escalated', updated_at = CURRENT_TIMESTAMP WHERE id = ?
+    `).run(interviewId);
+    db.prepare(`
+      UPDATE applications SET status = 'escalated' WHERE id = ?
+    `).run(interview.application_id);
+    console.log(`🚨 Interview ${interviewId} escalated: max negotiation rounds (${interview.max_negotiation_rounds}) exceeded`);
+    return {
+      message: 'Maximum scheduling attempts reached. A recruiter will contact you directly to arrange the interview.',
+      escalated: true,
+      slots: []
+    };
+  }
+
+  // Step 2: LLM extraction + Step 3: Validation
   let normalized = [];
   if (typeof availability === 'string' && availability.length > 5) {
-    console.log(`🤖 AI Parsing availability: "${availability}"`);
+    console.log(`\n🤖 ──── Scheduling Pipeline Start ────`);
+    console.log(`📝 Input: "${availability}"`);
+    console.log(`🔄 Round: ${interview.negotiation_rounds + 1}/${interview.max_negotiation_rounds}`);
+
     normalized = await parseAvailability(availability);
+
+    console.log(`📊 Result: ${normalized.length} validated slots`);
+    normalized.forEach((s, i) => {
+      const d = new Date(s.datetime);
+      console.log(`   ${i + 1}. ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`);
+    });
+    console.log(`🤖 ──── Pipeline Complete ────\n`);
   } else {
     const slots = Array.isArray(availability) ? availability : [availability];
     normalized = slots.map(slot => {
@@ -62,14 +104,35 @@ const submitAvailability = async (interviewId, availability) => {
     });
   }
 
-  db.prepare(`
-    UPDATE interviews SET candidate_availability = ?, interview_status = 'availability_submitted',
-    negotiation_rounds = negotiation_rounds + 1, updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `).run(JSON.stringify(normalized), interviewId);
+  // Update interview with parsed availability
+  const newStatus = normalized.length > 0 ? 'availability_submitted' : interview.interview_status;
 
-  return { message: 'Availability submitted', slots: normalized };
+  db.prepare(`
+    UPDATE interviews SET 
+      candidate_availability = ?, 
+      interview_status = ?,
+      negotiation_rounds = negotiation_rounds + 1, 
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(JSON.stringify(normalized), newStatus, interviewId);
+
+  return {
+    message: normalized.length > 0
+      ? 'Availability processed successfully'
+      : 'Could not extract availability. Please try being more specific (e.g., "Tuesday afternoon" or "next week after 2 PM").',
+    slots: normalized,
+    negotiation_round: interview.negotiation_rounds + 1,
+    max_rounds: interview.max_negotiation_rounds
+  };
 };
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 4. CALENDAR MATCHING ENGINE (Step 4)
+//    - Fetch recruiter availability
+//    - Compute overlap with validated candidate slots
+//    - Generate best matching slots
+// ═══════════════════════════════════════════════════════════════════
 
 const getMatchingSlots = (interviewId) => {
   const interview = db.prepare(`
@@ -79,16 +142,25 @@ const getMatchingSlots = (interviewId) => {
   if (!interview) return [];
 
   const candidateSlots = JSON.parse(interview.candidate_availability || '[]');
+  if (candidateSlots.length === 0) return [];
+
   const recruiterAvail = db.prepare(`
     SELECT * FROM recruiter_availability WHERE recruiter_id = ? AND is_available = 1
   `).all(interview.recruiter_id);
 
+  // If recruiter hasn't set availability, treat all candidate slots as proposed
   if (recruiterAvail.length === 0) {
-    // If recruiter hasn't set availability, treat candidate slots as proposed
-    return candidateSlots.map(s => ({ ...s, match: 'proposed', source: 'candidate' }));
+    return candidateSlots.map(s => ({
+      ...s,
+      match: 'proposed',
+      source: 'candidate'
+    }));
   }
 
-  return candidateSlots.map(slot => {
+  // Compute overlap between candidate slots and recruiter availability
+  const matched = [];
+
+  for (const slot of candidateSlots) {
     const slotDate = new Date(slot.datetime);
     const dayOfWeek = slotDate.getDay(); // 0 (Sun) - 6 (Sat)
     const slotTimeStr = slotDate.toTimeString().split(' ')[0].substring(0, 5); // "HH:MM"
@@ -97,25 +169,50 @@ const getMatchingSlots = (interviewId) => {
     const slotEndDate = new Date(slotDate.getTime() + (slot.duration || 60) * 60000);
     const slotEndTimeStr = slotEndDate.toTimeString().split(' ')[0].substring(0, 5);
 
-    // Check for specific date match first
+    // Check for specific date match first (higher priority)
     const dateStr = slotDate.toISOString().split('T')[0];
     const specificDateRule = recruiterAvail.find(r => r.specific_date === dateStr);
 
     if (specificDateRule) {
       const isMatch = slotTimeStr >= specificDateRule.start_time && slotEndTimeStr <= specificDateRule.end_time;
-      return { ...slot, match: isMatch ? 'available' : 'conflicted', source: 'specific_date' };
+      matched.push({
+        ...slot,
+        match: isMatch ? 'available' : 'conflicted',
+        source: 'specific_date'
+      });
+      continue;
     }
 
-    // Check for recurring day match
+    // Check for recurring day-of-week match
     const recurringRule = recruiterAvail.find(r => r.day_of_week === dayOfWeek && !r.specific_date);
     if (recurringRule) {
       const isMatch = slotTimeStr >= recurringRule.start_time && slotEndTimeStr <= recurringRule.end_time;
-      return { ...slot, match: isMatch ? 'available' : 'conflicted', source: 'recurring' };
+      matched.push({
+        ...slot,
+        match: isMatch ? 'available' : 'conflicted',
+        source: 'recurring'
+      });
+      continue;
     }
 
-    return { ...slot, match: 'conflicted', source: 'no_rule' };
+    matched.push({ ...slot, match: 'conflicted', source: 'no_rule' });
+  }
+
+  // Sort: available first, then by datetime
+  return matched.sort((a, b) => {
+    if (a.match === 'available' && b.match !== 'available') return -1;
+    if (a.match !== 'available' && b.match === 'available') return 1;
+    return new Date(a.datetime) - new Date(b.datetime);
   });
 };
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 5. SLOT BOOKING (Step 5)
+//    - Lock slot
+//    - Update interview status
+//    - Send confirmation email
+// ═══════════════════════════════════════════════════════════════════
 
 const bookSlot = async (interviewId, slotTime) => {
   // 1. Fetch details for the email BEFORE the transaction
@@ -129,6 +226,10 @@ const bookSlot = async (interviewId, slotTime) => {
   `).get(interviewId);
 
   if (!details) throw new Error('Interview details not found');
+
+  // Check for double-booking
+  const existing = db.prepare('SELECT id FROM interviews WHERE id = ? AND interview_status = ?').get(interviewId, 'confirmed');
+  if (existing) throw new Error('This interview is already booked.');
 
   const transaction = db.transaction(() => {
     db.prepare(`
@@ -166,8 +267,14 @@ const bookSlot = async (interviewId, slotTime) => {
     VALUES ((SELECT user_id FROM interviews i JOIN applications a ON i.application_id = a.id WHERE i.id = ?), 'interview_confirmation', ?, ?, 1)
   `).run(interviewId, subject, details.email);
 
+  console.log(`✅ Interview ${interviewId} booked: ${formattedDate}`);
   return { message: 'Interview booked and confirmation email sent' };
 };
+
+
+// ═══════════════════════════════════════════════════════════════════
+// TOKEN LOOKUP
+// ═══════════════════════════════════════════════════════════════════
 
 const getInterviewByToken = (token) => {
   return db.prepare(`
@@ -180,4 +287,12 @@ const getInterviewByToken = (token) => {
   `).get(token);
 };
 
-module.exports = { createInterview, sendSchedulingEmails, submitAvailability, getMatchingSlots, bookSlot, getInterviewByToken };
+
+module.exports = {
+  createInterview,
+  sendSchedulingEmails,
+  submitAvailability,
+  getMatchingSlots,
+  bookSlot,
+  getInterviewByToken
+};

@@ -83,11 +83,11 @@ const startBackgroundJobs = () => {
     });
 
     // Every 1 minute: Buffer promotion check
-    cron.schedule('* * * * *', () => {
+    cron.schedule('* * * * *', async () => {
         try {
             const jobs = db.prepare(`
         SELECT j.id, j.shortlist_target,
-        (SELECT COUNT(*) FROM applications WHERE job_id = j.id AND status = 'shortlisted') as current_shortlisted
+        (SELECT COUNT(*) FROM applications WHERE job_id = j.id AND status IN ('shortlisted', 'scheduling', 'confirmed')) as current_shortlisted
         FROM jobs j WHERE j.job_status = 'open'
       `).all();
 
@@ -95,9 +95,26 @@ const startBackgroundJobs = () => {
                 if (job.current_shortlisted < job.shortlist_target) {
                     const deficit = job.shortlist_target - job.current_shortlisted;
                     for (let i = 0; i < deficit; i++) {
-                        const result = promoteFromBuffer(job.id);
-                        if (!result.promoted) break;
+                        // Find the next best buffer candidate
+                        const next = db.prepare(`
+                            SELECT a.id FROM applications a
+                            LEFT JOIN ai_scores ai ON ai.application_id = a.id
+                            WHERE a.job_id = ? AND a.status IN ('buffer', 'processed', 'ranked')
+                            ORDER BY ai.overall_fit_score DESC
+                            LIMIT 1
+                        `).get(job.id);
+
+                        if (!next) break;
+
                         console.log(`📈 Promoted buffer candidate for job ${job.id}`);
+                        try {
+                            const { shortlistIndividualCandidateInternal } = require('./shortlistService');
+                            await shortlistIndividualCandidateInternal(next.id);
+                        } catch (err) {
+                            console.error(`Buffer promotion email failure for candidate ${next.id}:`, err);
+                            // Still promote the status even if email fails
+                            db.prepare(`UPDATE applications SET status = 'shortlisted' WHERE id = ?`).run(next.id);
+                        }
                     }
                 }
             }

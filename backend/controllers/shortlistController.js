@@ -1,4 +1,4 @@
-const { proposeShortlist, confirmShortlist, removeCandidate, getShortlistStatus } = require('../services/shortlistService');
+const { proposeShortlist, confirmShortlist, removeCandidate, getShortlistStatus, shortlistIndividual } = require('../services/shortlistService');
 const { sendSchedulingEmails } = require('../services/schedulingService');
 
 const propose = (req, res) => {
