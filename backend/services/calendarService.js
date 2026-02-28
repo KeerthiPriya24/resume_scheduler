@@ -20,7 +20,7 @@ if (!fs.existsSync(dataDir)) {
 const getOAuth2Client = () => {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:4000/api/calendar/callback';
+    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:4000/api/v1/calendar/callback';
 
     if (!clientId || !clientSecret) {
         console.log('⚠️ Google Calendar: Missing CLIENT_ID or CLIENT_SECRET');

@@ -209,10 +209,13 @@ const getMatchingSlots = (interviewId) => {
 
 // ═══════════════════════════════════════════════════════════════════
 // 5. SLOT BOOKING (Step 5)
+//    - Check Google Calendar for conflicts
 //    - Lock slot
-//    - Update interview status
+//    - Create Google Calendar event
 //    - Send confirmation email
 // ═══════════════════════════════════════════════════════════════════
+
+const { checkConflicts, createCalendarEvent } = require('./calendarService');
 
 const bookSlot = async (interviewId, slotTime) => {
   // 1. Fetch details for the email BEFORE the transaction
@@ -227,15 +230,28 @@ const bookSlot = async (interviewId, slotTime) => {
 
   if (!details) throw new Error('Interview details not found');
 
-  // Check for double-booking
+  // Check for double-booking in our system
   const existing = db.prepare('SELECT id FROM interviews WHERE id = ? AND interview_status = ?').get(interviewId, 'confirmed');
   if (existing) throw new Error('This interview is already booked.');
 
+  // 2. Check Google Calendar for conflicts
+  const slotDateTime = slotTime.datetime || slotTime;
+  const duration = slotTime.duration || 60;
+  const endTime = new Date(new Date(slotDateTime).getTime() + duration * 60 * 1000).toISOString();
+
+  const conflictCheck = await checkConflicts(slotDateTime, endTime);
+  if (conflictCheck.hasConflict) {
+    throw new Error(
+      `This slot conflicts with an existing calendar event. The interviewer has ${conflictCheck.conflicts.length} meeting(s) during this time. Please choose another slot.`
+    );
+  }
+
+  // 3. Lock the slot in our database
   const transaction = db.transaction(() => {
     db.prepare(`
       UPDATE interviews SET selected_slot = ?, interview_status = 'confirmed',
       scheduled_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
-    `).run(JSON.stringify(slotTime), slotTime.datetime || slotTime, interviewId);
+    `).run(JSON.stringify(slotTime), slotDateTime, interviewId);
 
     const interview = db.prepare(`
       SELECT i.application_id FROM interviews i WHERE i.id = ?
@@ -248,8 +264,24 @@ const bookSlot = async (interviewId, slotTime) => {
 
   transaction();
 
-  // 2. Send the confirmation email
-  const formattedDate = new Date(slotTime.datetime || slotTime).toLocaleString([], {
+  // 4. Create Google Calendar event
+  const calendarResult = await createCalendarEvent({
+    candidateName: details.name,
+    candidateEmail: details.email,
+    jobTitle: details.job_title,
+    startTime: slotDateTime,
+    duration: duration
+  });
+
+  if (calendarResult.created) {
+    // Store event ID for future reference (cancel/reschedule)
+    db.prepare(`
+      UPDATE interviews SET calendar_event_id = ? WHERE id = ?
+    `).run(calendarResult.eventId, interviewId);
+  }
+
+  // 5. Send the confirmation email
+  const formattedDate = new Date(slotDateTime).toLocaleString([], {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -261,14 +293,17 @@ const bookSlot = async (interviewId, slotTime) => {
   const { subject, html } = templates.confirmation(details.name, details.job_title, formattedDate);
   await sendEmail(details.email, subject, html);
 
-  // 3. Record notification
+  // 6. Record notification
   db.prepare(`
     INSERT INTO notifications (user_id, type, subject, email_to, sent)
     VALUES ((SELECT user_id FROM interviews i JOIN applications a ON i.application_id = a.id WHERE i.id = ?), 'interview_confirmation', ?, ?, 1)
   `).run(interviewId, subject, details.email);
 
-  console.log(`✅ Interview ${interviewId} booked: ${formattedDate}`);
-  return { message: 'Interview booked and confirmation email sent' };
+  console.log(`✅ Interview ${interviewId} booked: ${formattedDate}${calendarResult.created ? ' (Calendar event created)' : ''}`);
+  return {
+    message: 'Interview booked and confirmation email sent',
+    calendarEvent: calendarResult.created ? calendarResult.htmlLink : null
+  };
 };
 
 

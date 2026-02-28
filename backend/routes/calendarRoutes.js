@@ -13,12 +13,12 @@ router.get('/status', authenticate, requireRole('recruiter'), (req, res) => {
 });
 
 // GET /api/calendar/auth — get OAuth URL to authorize
-router.get('/auth', authenticate, requireRole('recruiter'), (req, res) => {
+router.get('/auth', (req, res) => {
     const url = getAuthUrl();
     if (!url) {
         return res.status(500).json({ error: 'Google Calendar credentials not configured in .env' });
     }
-    res.json({ authUrl: url });
+    res.redirect(url);
 });
 
 // GET /api/calendar/callback — OAuth callback (redirected from Google)

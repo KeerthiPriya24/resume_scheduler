@@ -147,6 +147,18 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_interviews_app ON interviews(application_id);
 `);
 
+// Migration: Add calendar_event_id to interviews if missing
+const interviewCols = db.prepare("PRAGMA table_info(interviews)").all().map(c => c.name);
+if (!interviewCols.includes('calendar_event_id')) {
+  try {
+    db.exec(`ALTER TABLE interviews ADD COLUMN calendar_event_id TEXT`);
+    console.log('✅ Migration: Added calendar_event_id to interviews table');
+  } catch (err) {
+    console.error('Migration error (calendar_event_id):', err.message);
+  }
+}
+
 console.log('✅ Database initialized successfully');
 
 module.exports = db;
+

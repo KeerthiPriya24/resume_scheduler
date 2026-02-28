@@ -32,6 +32,7 @@ app.use('/api/shortlist', require('./routes/shortlistRoutes'));
 app.use('/api/interviews', require('./routes/interviewRoutes'));
 app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/v1/calendar', require('./routes/calendarRoutes'));
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -60,6 +61,12 @@ app.listen(PORT, () => {
     // Start background jobs
     const { startBackgroundJobs } = require('./services/backgroundJobs');
     startBackgroundJobs();
+
+    // Google Calendar status
+    const { isConnected } = require('./services/calendarService');
+    if (process.env.GOOGLE_CLIENT_ID) {
+        console.log(`📅 Google Calendar: ${isConnected() ? '✅ Connected' : '⚠️ Not authorized — visit /api/v1/calendar/auth'}`);
+    }
 });
 
 module.exports = app;
