@@ -97,10 +97,10 @@ export default function AvailabilitySettings() {
                 ...specificSlots
             ];
             await API.post('/interviews/recruiter-availability', { slots: payload });
-            setMessage('✅ Availability updated successfully!');
+            setMessage('Availability updated successfully.');
             setTimeout(() => navigate('/recruiter/dashboard'), 1500);
         } catch (err) {
-            setMessage('❌ Failed to update availability.');
+            setMessage('Failed to update availability.');
         } finally {
             setSaving(false);
         }
@@ -114,7 +114,7 @@ export default function AvailabilitySettings() {
                 <div className="availability-main">
                     <div className="card glass anim-fade-in">
                         <div className="card-header">
-                            <h2>📅 Weekly Recurring</h2>
+                            <h2>Weekly Recurring</h2>
                             <p className="text-muted">Set your regular working hours.</p>
                         </div>
                         <div className="days-list">
@@ -159,7 +159,7 @@ export default function AvailabilitySettings() {
                 <div className="availability-side">
                     <div className="card glass anim-fade-in">
                         <div className="card-header">
-                            <h2>🗓️ Specific Dates</h2>
+                            <h2>Specific Dates</h2>
                             <p className="text-muted">Override or add slots for specific days.</p>
                         </div>
                         <div className="calendar-wrap">
@@ -228,7 +228,7 @@ export default function AvailabilitySettings() {
                         )}
                     </div>
 
-                    {message && <div className={`alert mt-4 ${message.startsWith('✅') ? 'alert-success' : 'alert-error'}`}>{message}</div>}
+                    {message && <div className={`alert mt-4 ${message.startsWith('Avail') ? 'alert-success' : 'alert-error'}`}>{message}</div>}
 
                     <div className="form-footer mt-4">
                         <button type="button" className="btn btn-ghost" onClick={() => navigate(-1)}>Cancel</button>

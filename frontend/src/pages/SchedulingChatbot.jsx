@@ -144,7 +144,7 @@ export default function SchedulingChatbot() {
         try {
             await axios.post(`/api/interviews/book/${interview.id}`, { slot });
             setBookedSlot(slot);
-            await botResponse(`Excellent choice! 🗓️`);
+            await botResponse(`Great choice!`);
             addMessage('bot', 'INTERVIEW_CONFIRMED_CARD'); // Special marker for UI
             setStep('confirmed');
         } catch (err) {
@@ -198,7 +198,7 @@ export default function SchedulingChatbot() {
                             <div className={`message-bubble ${m.role}-bubble`}>
                                 {m.text === 'INTERVIEW_CONFIRMED_CARD' ? (
                                     <div className="booking-summary-card anim-slide-up">
-                                        <h4>✅ Interview Booked</h4>
+                                        <h4>Interview Booked</h4>
                                         <div className="summary-item"><strong>Job:</strong> {interview.job_title}</div>
                                         <div className="summary-item"><strong>Date:</strong> {formatDate(bookedSlot?.datetime || '', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
                                         <div className="summary-item"><strong>Time:</strong> {formatTime(bookedSlot?.datetime || '', { hour: '2-digit', minute: '2-digit' })}</div>
@@ -255,7 +255,7 @@ export default function SchedulingChatbot() {
                                 ))}
                             </div>
                             <button className="btn btn-ghost btn-sm btn-block mt-3" onClick={handleAlternative}>
-                                ❌ None of these work / Change my availability
+                                None of these work / Change my availability
                             </button>
                         </div>
                     )}

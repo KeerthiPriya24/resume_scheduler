@@ -15,11 +15,11 @@ export default function MyApplications() {
         processed: { color: '#3b82f6', label: 'Reviewed' },
         ranked: { color: '#8b5cf6', label: 'Ranked' },
         pending_confirmation: { color: '#f97316', label: 'Pending Confirmation' },
-        shortlisted: { color: '#10b981', label: '⭐ Shortlisted' },
+        shortlisted: { color: '#10b981', label: 'Shortlisted' },
         buffer: { color: '#6b7280', label: 'In Waitlist' },
-        scheduling: { color: '#06b6d4', label: '📅 Scheduling' },
-        confirmed: { color: '#059669', label: '✅ Interview Confirmed' },
-        selected: { color: '#22c55e', label: '🎉 Selected!' },
+        scheduling: { color: '#06b6d4', label: 'Scheduling' },
+        confirmed: { color: '#059669', label: 'Interview Confirmed' },
+        selected: { color: '#22c55e', label: 'Selected' },
         rejected: { color: '#ef4444', label: 'Not Selected' },
         escalated: { color: '#dc2626', label: 'Needs Attention' }
     };

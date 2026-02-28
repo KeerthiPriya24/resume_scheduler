@@ -49,7 +49,7 @@ export default function JobSeekerDashboard() {
         <div className="dashboard-page">
             <div className="dashboard-header">
                 <div>
-                    <h1>Welcome back, {user?.name}! 👋</h1>
+                    <h1>Welcome back, {user?.name}</h1>
                     <p>Track your applications and upcoming interviews.</p>
                 </div>
                 <Link to="/jobs" className="btn btn-primary">Browse All Jobs</Link>
@@ -57,12 +57,12 @@ export default function JobSeekerDashboard() {
 
             <div className="stats-grid">
                 <div className="stat-card stat-blue">
-                    <div className="stat-icon">📄</div>
+                    <div className="stat-icon"></div>
                     <div className="stat-value">{stats.applied}</div>
                     <div className="stat-label">Applications</div>
                 </div>
                 <div className="stat-card stat-cyan">
-                    <div className="stat-icon">📅</div>
+                    <div className="stat-icon"></div>
                     <div className="stat-value">{stats.interviewing}</div>
                     <div className="stat-label">Interviews</div>
                 </div>

@@ -39,10 +39,10 @@ export default function PipelineView() {
         setMessage('');
         try {
             const res = await API.post(`/ai/process-all/${jobId}`);
-            setMessage(`✅ ${res.data.results?.length || 0} applications processed by AI`);
+            setMessage(`${res.data.results?.length || 0} applications processed by AI`);
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Processing failed'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Processing failed'));
         } finally {
             setProcessing(false);
         }
@@ -51,20 +51,20 @@ export default function PipelineView() {
     const proposeShortlist = async () => {
         try {
             const res = await API.post(`/shortlist/propose/${jobId}`);
-            setMessage(`✅ ${res.data.message}`);
+            setMessage(`${res.data.message}`);
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Failed'));
         }
     };
 
     const confirmShortlist = async () => {
         try {
             const res = await API.post(`/shortlist/confirm/${jobId}`);
-            setMessage(`✅ Shortlist confirmed! ${res.data.emails_sent || 0} scheduling emails sent.`);
+            setMessage(`Shortlist confirmed. ${res.data.emails_sent || 0} scheduling emails sent.`);
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Failed'));
         }
     };
 
@@ -72,40 +72,40 @@ export default function PipelineView() {
         if (!window.confirm("Are you sure you want to close this job? It will no longer be visible to job seekers.")) return;
         try {
             await API.put(`/jobs/${jobId}/status`, { status: 'closed' });
-            setMessage('🔒 Job closed successfully.');
+            setMessage('Job closed successfully.');
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed to close job'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Failed to close job'));
         }
     };
 
     const removeCandidate = async (appId) => {
         try {
             await API.delete(`/shortlist/remove/${jobId}/${appId}`);
-            setMessage('✅ Candidate removed, buffer promoted');
+            setMessage('Candidate removed, buffer promoted');
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Failed'));
         }
     };
 
     const makeDecision = async (interviewId, decision) => {
         try {
             const res = await API.put(`/interviews/decision/${interviewId}`, { decision });
-            setMessage(`✅ ${res.data.message}`);
+            setMessage(`${res.data.message}`);
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed'));
+            setMessage('Error: ' + (err.response?.data?.error || 'Failed'));
         }
     };
 
     const shortlistIndividual = async (appId) => {
         try {
             const res = await API.post(`/shortlist/individual/${appId}`);
-            setMessage(`✅ ${res.data.message}`);
+            setMessage(`${res.data.message}`);
             loadAll();
         } catch (err) {
-            setMessage('❌ ' + (err.response?.data?.error || 'Failed to shortlist'));
+            setMessage((err.response?.data?.error || 'Failed to shortlist'));
         }
     };
 
@@ -155,7 +155,7 @@ export default function PipelineView() {
                 {activeTab === 'overview' && (
                     <div className="overview-grid">
                         <div className="overview-card">
-                            <h3>📊 Quick Actions</h3>
+                            <h3>Quick Actions</h3>
                             <div className="action-stack">
                                 {counts.pending_ai > 0 && (
                                     <button className="btn btn-primary btn-full" onClick={processAll} disabled={processing}>
@@ -163,13 +163,13 @@ export default function PipelineView() {
                                     </button>
                                 )}
                                 {counts.processed > 0 && counts.selected < job.positions && (!pipeline.shortlist || pipeline.shortlist.status !== 'proposed') && (
-                                    <button className="btn btn-secondary btn-full" onClick={proposeShortlist}>📋 Propose Shortlist</button>
+                                    <button className="btn btn-secondary btn-full" onClick={proposeShortlist}>Propose Shortlist</button>
                                 )}
                                 {pipeline.shortlist?.status === 'proposed' && (
-                                    <button className="btn btn-success btn-full" onClick={confirmShortlist}>✅ Confirm Shortlist</button>
+                                    <button className="btn btn-success btn-full" onClick={confirmShortlist}>Confirm Shortlist</button>
                                 )}
                                 {job.job_status === 'open' && (
-                                    <button className="btn btn-danger btn-full" onClick={closeJob}>🔒 Close Job Opening</button>
+                                    <button className="btn btn-danger btn-full" onClick={closeJob}>Close Job Opening</button>
                                 )}
                                 {job.job_status === 'closed' && (
                                     <div className="alert alert-info" style={{ margin: 0 }}>This job is closed and hidden from public.</div>
@@ -225,7 +225,7 @@ export default function PipelineView() {
                                             <div className="table-actions-mini">
                                                 {app.resume_path && (
                                                     <a href={`http://localhost:4000/uploads/${app.resume_path}`} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-xs">
-                                                        📄 Resume
+                                                        Resume
                                                     </a>
                                                 )}
                                                 {['processed', 'ranked', 'buffer'].includes(app.status) && (
@@ -246,13 +246,13 @@ export default function PipelineView() {
                     <div className="shortlist-section">
                         {shortlist?.shortlist?.status === 'proposed' && (
                             <div className="shortlist-banner">
-                                <p>⏰ Shortlist proposed — awaiting your confirmation</p>
-                                <button className="btn btn-success" onClick={confirmShortlist}>✅ Confirm Shortlist</button>
+                                <p>Shortlist proposed — awaiting your confirmation</p>
+                                <button className="btn btn-success" onClick={confirmShortlist}>Confirm Shortlist</button>
                             </div>
                         )}
                         {shortlist?.shortlist?.status === 'confirmed' && (
                             <div className="shortlist-banner confirmed">
-                                <p>✅ Shortlist confirmed at {new Date(shortlist.shortlist.confirmed_at).toLocaleString()}</p>
+                                <p>Shortlist confirmed at {new Date(shortlist.shortlist.confirmed_at).toLocaleString()}</p>
                             </div>
                         )}
 
@@ -288,7 +288,7 @@ export default function PipelineView() {
 
                 {activeTab === 'interviews' && (
                     <div className="interviews-section">
-                        <h3>📅 Interview Schedule</h3>
+                        <h3>Interview Schedule</h3>
                         {interviews.length === 0 ? (
                             <div className="empty-state-sm"><p>No interviews scheduled yet. Confirm the shortlist to begin scheduling.</p></div>
                         ) : (
@@ -300,7 +300,7 @@ export default function PipelineView() {
                                             <span className={`status-pill-sm status-${i.interview_status}`}>{i.interview_status?.replace(/_/g, ' ')}</span>
                                         </div>
                                         <p>{i.candidate_email}</p>
-                                        {i.selected_slot && <p className="slot-info">📅 {JSON.stringify(i.selected_slot)}</p>}
+                                        {i.selected_slot && <p className="slot-info">{JSON.stringify(i.selected_slot)}</p>}
                                         {i.candidate_availability?.length > 0 && (
                                             <div className="avail-info"><strong>Availability:</strong> {i.candidate_availability.map((s, idx) => <span key={idx}>{s.datetime || JSON.stringify(s)}</span>)}</div>
                                         )}
@@ -328,9 +328,9 @@ export default function PipelineView() {
                                         </div>
                                         {!['selected', 'rejected'].includes(i.application_status) && (
                                             <div className="dc-actions">
-                                                <button className="btn btn-success btn-sm" onClick={() => makeDecision(i.id, 'selected')}>✅ Select</button>
-                                                <button className="btn btn-warning btn-sm" onClick={() => makeDecision(i.id, 'hold')}>⏸ Hold</button>
-                                                <button className="btn btn-danger btn-sm" onClick={() => makeDecision(i.id, 'rejected')}>❌ Reject</button>
+                                                <button className="btn btn-success btn-sm" onClick={() => makeDecision(i.id, 'selected')}>Select</button>
+                                                <button className="btn btn-warning btn-sm" onClick={() => makeDecision(i.id, 'hold')}>Hold</button>
+                                                <button className="btn btn-danger btn-sm" onClick={() => makeDecision(i.id, 'rejected')}>Reject</button>
                                             </div>
                                         )}
                                     </div>

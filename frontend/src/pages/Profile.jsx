@@ -35,9 +35,9 @@ export default function Profile() {
         setMessage(null);
         try {
             await API.put('/users/profile', profile);
-            setMessage({ type: 'success', text: '✅ Profile updated successfully!' });
+            setMessage({ type: 'success', text: 'Profile updated successfully.' });
         } catch (err) {
-            setMessage({ type: 'error', text: '❌ Failed to update profile.' });
+            setMessage({ type: 'error', text: 'Failed to update profile.' });
         } finally {
             setSaving(false);
         }

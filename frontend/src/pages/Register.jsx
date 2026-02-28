@@ -41,13 +41,13 @@ export default function Register() {
                             <div className="role-selector">
                                 <button type="button" className={`role-btn ${form.role === 'recruiter' ? 'active' : ''}`}
                                     onClick={() => setForm({ ...form, role: 'recruiter' })}>
-                                    <span className="role-icon">👔</span>
+                                    <span className="role-icon">R</span>
                                     <span className="role-label">Recruiter</span>
                                     <span className="role-desc">Post jobs & hire talent</span>
                                 </button>
                                 <button type="button" className={`role-btn ${form.role === 'jobseeker' ? 'active' : ''}`}
                                     onClick={() => setForm({ ...form, role: 'jobseeker' })}>
-                                    <span className="role-icon">👩‍💻</span>
+                                    <span className="role-icon">JS</span>
                                     <span className="role-label">Job Seeker</span>
                                     <span className="role-desc">Find your dream job</span>
                                 </button>

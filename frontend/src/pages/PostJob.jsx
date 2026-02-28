@@ -100,7 +100,7 @@ export default function PostJob() {
 
                     <div className="shortlist-preview">
                         <div className="shortlist-formula">
-                            <span className="formula-label">📊 Shortlist Formula</span>
+                            <span className="formula-label">Shortlist Formula</span>
                             <span className="formula-values">
                                 H = {form.positions} positions → S = <strong>{S}</strong> candidates to shortlist
                             </span>

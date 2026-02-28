@@ -81,17 +81,17 @@ export default function JobDetails() {
                                         <label htmlFor="resume-upload">Upload Resume (PDF) *</label>
                                         <div className="file-upload">
                                             <input id="resume-upload" type="file" accept=".pdf" onChange={e => setResume(e.target.files[0])} required />
-                                            {resume && <span className="file-name">📎 {resume.name}</span>}
+                                            {resume && <span className="file-name">{resume.name}</span>}
                                         </div>
                                         {!resume && <p className="text-muted" style={{ fontSize: '0.8rem', marginTop: '5px' }}>Please select your resume to enable submission.</p>}
                                     </div>
                                     <button type="submit" className="btn btn-primary btn-full" disabled={applying || !resume}>
-                                        {applying ? <span className="spinner-sm"></span> : '🚀 Submit Application'}
+                                        {applying ? <span className="spinner-sm"></span> : 'Submit Application'}
                                     </button>
                                 </form>
                             </div>
                         )}
-                        {applied && <div className="apply-card success-card"><div className="success-icon">✅</div><h3>Applied!</h3><p>{success}</p></div>}
+                        {applied && <div className="apply-card success-card"><h3>Applied!</h3><p>{success}</p></div>}
                         {!user && <div className="apply-card"><p>Please <a href="/login">sign in</a> as a job seeker to apply</p></div>}
                     </div>
                 </div>

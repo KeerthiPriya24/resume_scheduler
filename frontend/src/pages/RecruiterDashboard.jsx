@@ -64,17 +64,17 @@ export default function RecruiterDashboard() {
             {stats && (
                 <div className="stats-grid">
                     <div className="stat-card stat-blue">
-                        <div className="stat-icon">📋</div>
+                        <div className="stat-icon"></div>
                         <div className="stat-value">{stats.total_jobs}</div>
                         <div className="stat-label">Total Jobs</div>
                     </div>
                     <div className="stat-card stat-cyan">
-                        <div className="stat-icon">📅</div>
+                        <div className="stat-icon"></div>
                         <div className="stat-value">{stats.interviews_scheduled}</div>
                         <div className="stat-label">Interviews</div>
                     </div>
                     <div className="stat-card stat-emerald">
-                        <div className="stat-icon">🎉</div>
+                        <div className="stat-icon"></div>
                         <div className="stat-value">{stats.selected}</div>
                         <div className="stat-label">Hired</div>
                     </div>
@@ -92,8 +92,8 @@ export default function RecruiterDashboard() {
                                     <span className={`status-badge status-${job.job_status}`}>{job.job_status}</span>
                                 </div>
                                 <div className="job-card-meta">
-                                    <span>📄 {job.application_count} applications</span>
-                                    <span>🎯 {job.positions} positions</span>
+                                    <span>{job.application_count} applications</span>
+                                    <span>{job.positions} positions</span>
                                 </div>
                                 <div className="job-card-footer">
                                     <span className="job-date">{new Date(job.created_at).toLocaleDateString()}</span>
@@ -130,7 +130,7 @@ export default function RecruiterDashboard() {
                         <div className="selected-date-interviews mt-4">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h4>{selectedDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</h4>
-                                <Link to="/recruiter/availability" className="btn-icon-sm" title="Edit Availability">⚙️</Link>
+                                <Link to="/recruiter/availability" className="btn-icon-sm" title="Edit Availability">Edit</Link>
                             </div>
 
                             {interviewsOnSelectedDate.length > 0 && (
@@ -153,7 +153,7 @@ export default function RecruiterDashboard() {
                                     <div className="section-label">AVAILABILITY</div>
                                     {availabilityOnSelectedDate.map((a, idx) => (
                                         <div key={idx} className="avail-block-mini">
-                                            🕒 {a.start_time} - {a.end_time}
+                                            {a.start_time} – {a.end_time}
                                             {a.specific_date && <span className="custom-tag">Custom</span>}
                                         </div>
                                     ))}
